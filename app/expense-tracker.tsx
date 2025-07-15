@@ -138,6 +138,24 @@ export default function ExpenseTracker({ groupId }: ExpenseTrackerProps) {
       setIsCreating(false)
     }
   }
+
+  const createNewGroupManual = async () => {
+    setLoading(true)
+    try {
+      const newGroupId = await createGroup({
+        groupName: '친구 여행',
+        people: [],
+        expenses: [],
+        updatedAt: Date.now()
+      })
+      router.push(`/${newGroupId}`)
+    } catch (error) {
+      console.error('Failed to create group:', error)
+      alert('그룹 생성에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setLoading(false)
+    }
+  }
   
   const addPerson = () => {
     if (newPersonName.trim()) {
@@ -323,7 +341,7 @@ export default function ExpenseTracker({ groupId }: ExpenseTrackerProps) {
           
           {/* 그룹 이름 및 공유 섹션 */}
           {groupId && (
-            <div className="mt-6 flex items-center justify-center gap-3">
+            <div className="mt-6 flex flex-col items-center gap-3">
               <input
                 type="text"
                 value={groupName}
@@ -334,24 +352,33 @@ export default function ExpenseTracker({ groupId }: ExpenseTrackerProps) {
                 placeholder="그룹 이름"
                 className="px-6 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all backdrop-blur-sm text-center font-semibold"
               />
-              <button
-                onClick={copyShareLink}
-                className={`px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-2xl hover:shadow-2xl hover:shadow-purple-500/25 transform hover:scale-105 transition-all duration-200 font-bold flex items-center gap-2 ${
-                  showCopied ? 'from-green-500 to-green-600' : ''
-                }`}
-              >
-                {showCopied ? (
-                  <>
-                    <span>✓</span>
-                    <span>복사됨!</span>
-                  </>
-                ) : (
-                  <>
-                    <span>🔗</span>
-                    <span>공유하기</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={copyShareLink}
+                  className={`px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-2xl hover:shadow-2xl hover:shadow-purple-500/25 transform hover:scale-105 transition-all duration-200 font-bold flex items-center gap-2 ${
+                    showCopied ? 'from-green-500 to-green-600' : ''
+                  }`}
+                >
+                  {showCopied ? (
+                    <>
+                      <span>✓</span>
+                      <span>복사됨!</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🔗</span>
+                      <span>공유하기</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={createNewGroupManual}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl hover:shadow-2xl hover:shadow-pink-500/25 transform hover:scale-105 transition-all duration-200 font-bold flex items-center gap-2"
+                >
+                  <span>➕</span>
+                  <span>새 그룹</span>
+                </button>
+              </div>
             </div>
           )}
           
