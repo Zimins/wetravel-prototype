@@ -35,6 +35,7 @@ function ExpenseCalculator() {
   const [groupName, setGroupName] = useState('우리 모임')
   const [showCopied, setShowCopied] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState<string>('all')
+  const [filterType, setFilterType] = useState<'all' | 'from' | 'to'>('all')
   
   // Load state from URL on mount
   useEffect(() => {
@@ -189,7 +190,11 @@ function ExpenseCalculator() {
   // 필터링된 정산 결과
   const filteredSettlements = selectedPerson === 'all' 
     ? settlements 
-    : settlements.filter(s => s.from === selectedPerson || s.to === selectedPerson)
+    : settlements.filter(s => {
+        if (filterType === 'from') return s.from === selectedPerson
+        if (filterType === 'to') return s.to === selectedPerson
+        return s.from === selectedPerson || s.to === selectedPerson
+      })
   
   // Calculate total expense and per person average
   const totalExpense = expenses.reduce((sum, exp) => sum + exp.amount, 0)
@@ -414,16 +419,27 @@ function ExpenseCalculator() {
                 <span className="text-3xl">✨</span>
                 <span>정산 결과</span>
               </h2>
-              <select
-                value={selectedPerson}
-                onChange={(e) => setSelectedPerson(e.target.value)}
-                className="px-5 py-3 bg-white/10 border border-white/20 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all backdrop-blur-sm"
-              >
-                <option value="all" className="bg-gray-800 text-white">전체 보기</option>
-                {people.map(person => (
-                  <option key={person.id} value={person.id} className="bg-gray-800 text-white">{person.name}</option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value as 'all' | 'from' | 'to')}
+                  className="px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all backdrop-blur-sm"
+                >
+                  <option value="all" className="bg-gray-800 text-white">전체</option>
+                  <option value="from" className="bg-gray-800 text-white">보내는 사람</option>
+                  <option value="to" className="bg-gray-800 text-white">받는 사람</option>
+                </select>
+                <select
+                  value={selectedPerson}
+                  onChange={(e) => setSelectedPerson(e.target.value)}
+                  className="px-5 py-3 bg-white/10 border border-white/20 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all backdrop-blur-sm"
+                >
+                  <option value="all" className="bg-gray-800 text-white">전체 보기</option>
+                  {people.map(person => (
+                    <option key={person.id} value={person.id} className="bg-gray-800 text-white">{person.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="space-y-3">
               {filteredSettlements.map((settlement, index) => (
