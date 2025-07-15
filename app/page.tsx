@@ -34,6 +34,7 @@ function ExpenseCalculator() {
   const [newExpensePaidBy, setNewExpensePaidBy] = useState('')
   const [groupName, setGroupName] = useState('우리 모임')
   const [showCopied, setShowCopied] = useState(false)
+  const [selectedPerson, setSelectedPerson] = useState<string>('all')
   
   // Load state from URL on mount
   useEffect(() => {
@@ -184,6 +185,11 @@ function ExpenseCalculator() {
   
   const settlements = calculateSettlements()
   const getPersonName = (id: string) => people.find(p => p.id === id)?.name || ''
+  
+  // 필터링된 정산 결과
+  const filteredSettlements = selectedPerson === 'all' 
+    ? settlements 
+    : settlements.filter(s => s.from === selectedPerson || s.to === selectedPerson)
   
   // Calculate total expense and per person average
   const totalExpense = expenses.reduce((sum, exp) => sum + exp.amount, 0)
@@ -403,12 +409,24 @@ function ExpenseCalculator() {
         {/* Settlement Results - Always visible when there are settlements */}
         {settlements.length > 0 && (
           <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/20">
-            <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-3">
-              <span className="text-3xl">✨</span>
-              <span>정산 결과</span>
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                <span className="text-3xl">✨</span>
+                <span>정산 결과</span>
+              </h2>
+              <select
+                value={selectedPerson}
+                onChange={(e) => setSelectedPerson(e.target.value)}
+                className="px-5 py-3 bg-white/10 border border-white/20 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all backdrop-blur-sm"
+              >
+                <option value="all" className="bg-gray-800 text-white">전체 보기</option>
+                {people.map(person => (
+                  <option key={person.id} value={person.id} className="bg-gray-800 text-white">{person.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="space-y-3">
-              {settlements.map((settlement, index) => (
+              {filteredSettlements.map((settlement, index) => (
                 <div key={index} className="flex items-center justify-between p-6 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-2xl border border-white/20 hover:border-white/40 backdrop-blur-sm transition-all">
                   <div className="flex items-center gap-4">
                     <span className="font-bold text-white text-lg">{getPersonName(settlement.from)}</span>
@@ -421,6 +439,9 @@ function ExpenseCalculator() {
                 </div>
               ))}
             </div>
+            {filteredSettlements.length === 0 && selectedPerson !== 'all' && (
+              <p className="text-center text-white/60 py-8">선택한 사람과 관련된 정산 내역이 없습니다.</p>
+            )}
           </div>
         )}
         
