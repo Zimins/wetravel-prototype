@@ -56,12 +56,10 @@ function ExpenseCalculator() {
   
   // Update URL when state changes
   useEffect(() => {
-    if (people.length > 0 || expenses.length > 0 || groupName !== '우리 모임') {
-      // UTF-8 문자열을 base64로 안전하게 인코딩
-      const stateString = JSON.stringify({ people, expenses, groupName })
-      const state = btoa(unescape(encodeURIComponent(stateString)))
-      router.replace(`?state=${state}`)
-    }
+    // UTF-8 문자열을 base64로 안전하게 인코딩
+    const stateString = JSON.stringify({ people, expenses, groupName })
+    const state = btoa(unescape(encodeURIComponent(stateString)))
+    router.replace(`?state=${state}`, { scroll: false })
   }, [people, expenses, groupName, router])
   
   const addPerson = () => {
