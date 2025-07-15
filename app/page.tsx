@@ -43,7 +43,7 @@ function ExpenseCalculator() {
     if (stateParam) {
       try {
         // UTF-8 문자열을 base64에서 안전하게 디코딩
-        const decodedString = decodeURIComponent(escape(atob(stateParam)))
+        const decodedString = decodeURIComponent(atob(stateParam))
         const decodedState = JSON.parse(decodedString)
         setPeople(decodedState.people || [])
         setExpenses(decodedState.expenses || [])
@@ -58,7 +58,7 @@ function ExpenseCalculator() {
   useEffect(() => {
     // UTF-8 문자열을 base64로 안전하게 인코딩
     const stateString = JSON.stringify({ people, expenses, groupName })
-    const state = btoa(unescape(encodeURIComponent(stateString)))
+    const state = btoa(encodeURIComponent(stateString))
     router.replace(`?state=${state}`, { scroll: false })
   }, [people, expenses, groupName, router])
   
