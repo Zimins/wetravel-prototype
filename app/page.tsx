@@ -36,6 +36,9 @@ function ExpenseCalculator() {
   const [showCopied, setShowCopied] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState<string>('all')
   const [filterType, setFilterType] = useState<'all' | 'from' | 'to'>('all')
+  const [showExpenseDialog, setShowExpenseDialog] = useState(false)
+  const [tempSplitAmong, setTempSplitAmong] = useState<string[]>([])
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
   
   // Load state from URL on mount
   useEffect(() => {
@@ -81,16 +84,19 @@ function ExpenseCalculator() {
   const addExpense = () => {
     if (newExpenseName.trim() && newExpenseAmount && people.length > 0) {
       const paidBy = newExpensePaidBy || people[0].id
+      const splitAmong = showExpenseDialog ? tempSplitAmong : people.map(p => p.id)
       setExpenses([...expenses, {
         id: Date.now().toString(),
         name: newExpenseName.trim(),
         amount: parseFloat(newExpenseAmount),
         paidBy: paidBy,
-        splitAmong: people.map(p => p.id)
+        splitAmong: splitAmong.length > 0 ? splitAmong : people.map(p => p.id)
       }])
       setNewExpenseName('')
       setNewExpenseAmount('')
       setNewExpensePaidBy('')
+      setShowExpenseDialog(false)
+      setTempSplitAmong([])
     }
   }
   
@@ -256,12 +262,12 @@ function ExpenseCalculator() {
         </div>
         
         {/* People Management */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8 mb-8 border border-white/20">
-          <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-3">
+        <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-2 lg:p-8 mb-8 border border-white/20">
+          <h2 className="text-2xl font-bold mb-2 lg:mb-6 text-white flex items-center gap-3">
             <span className="text-3xl">👥</span>
             <span>참가자 설정</span>
           </h2>
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-2 lg:mb-4">
             <input
               type="text"
               value={newPersonName}
@@ -294,12 +300,13 @@ function ExpenseCalculator() {
         
         {/* Expense Management */}
         {people.length > 0 && (
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8 mb-8 border border-white/20">
-            <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-3">
+          <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-2 lg:p-8 mb-8 border border-white/20">
+            <h2 className="text-2xl font-bold mb-2 lg:mb-6 text-white flex items-center gap-3">
               <span className="text-3xl">💰</span>
               <span>비용 입력</span>
             </h2>
-            <div className="flex gap-2 mb-6">
+            {/* Desktop expense input */}
+            <div className="hidden lg:flex gap-2 mb-6">
               <input
                 type="text"
                 value={newExpenseName}
@@ -334,46 +341,76 @@ function ExpenseCalculator() {
               </button>
             </div>
             
+            {/* Mobile expense button */}
+            <div className="lg:hidden mb-2 lg:mb-6">
+              <button
+                onClick={() => {
+                  setShowExpenseDialog(true)
+                  setTempSplitAmong(people.map(p => p.id))
+                }}
+                className="w-full px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-2xl hover:shadow-2xl hover:shadow-purple-500/25 transform hover:scale-105 transition-all duration-200 font-bold flex items-center justify-center gap-2"
+              >
+                <span className="text-2xl">+</span>
+                <span>비용 추가하기</span>
+              </button>
+            </div>
+            
             {/* Expense Table */}
             {expenses.length > 0 && (
               <div className="overflow-x-auto rounded-2xl bg-black/20 backdrop-blur-sm">
                 <table className="w-full">
                   <thead className="bg-white/10 border-b border-white/20">
                     <tr>
-                      <th className="text-left p-5 font-bold text-white/90">항목</th>
-                      <th className="text-right p-5 font-bold text-white/90">금액</th>
-                      <th className="p-5 font-bold text-white/90">결제자</th>
+                      <th className="text-left p-3 lg:p-5 font-bold text-white/90">항목</th>
+                      <th className="text-right p-3 lg:p-5 font-bold text-white/90">금액</th>
+                      <th className="p-3 lg:p-5 font-bold text-white/90">결제자</th>
+                      <th className="hidden lg:table-cell p-5 font-bold text-white/90" colSpan={people.length}>분할</th>
                       {people.map(person => (
-                        <th key={person.id} className="p-5 text-center font-bold text-white/90">{person.name}</th>
+                        <th key={person.id} className="hidden lg:table-cell p-5 text-center font-bold text-white/90">{person.name}</th>
                       ))}
-                      <th className="p-4"></th>
+                      <th className="p-3 lg:p-4"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {expenses.map((expense, index) => (
                       <tr key={expense.id} className={`border-b border-white/10 ${index % 2 === 0 ? 'bg-white/5' : 'bg-black/10'} hover:bg-white/10 transition-all`}>
-                        <td className="p-5 font-semibold text-white">{expense.name}</td>
-                        <td className="text-right p-5">
+                        <td className="p-3 lg:p-5 font-semibold text-white">
+                          <div className="lg:hidden text-xs text-white/60">{expense.name}</div>
+                          <div className="hidden lg:block">{expense.name}</div>
+                        </td>
+                        <td className="text-right p-3 lg:p-5">
                           <input
                             type="number"
                             value={expense.amount}
                             onChange={(e) => updateExpense(expense.id, { amount: parseFloat(e.target.value) || 0 })}
-                            className="w-32 px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-cyan-400 font-bold text-right focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all backdrop-blur-sm"
+                            className="w-24 lg:w-32 px-2 lg:px-3 py-1 lg:py-2 bg-white/10 border border-white/20 rounded-xl text-cyan-400 font-bold text-right focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all backdrop-blur-sm text-sm lg:text-base"
                           />
                         </td>
-                        <td className="p-4">
+                        <td className="p-3 lg:p-4">
                           <select
                             value={expense.paidBy}
                             onChange={(e) => updateExpense(expense.id, { paidBy: e.target.value })}
-                            className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all backdrop-blur-sm"
+                            className="px-2 lg:px-4 py-1 lg:py-2 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all backdrop-blur-sm text-sm lg:text-base"
                           >
                             {people.map(person => (
                               <option key={person.id} value={person.id} className="bg-gray-800 text-white">{person.name}</option>
                             ))}
                           </select>
+                          <div className="lg:hidden mt-2 flex items-center gap-2">
+                            <span className="text-xs text-white/60">분할: {expense.splitAmong.length}명</span>
+                            <button
+                              onClick={() => {
+                                setEditingExpenseId(expense.id)
+                                setTempSplitAmong(expense.splitAmong)
+                              }}
+                              className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+                            >
+                              수정
+                            </button>
+                          </div>
                         </td>
                         {people.map(person => (
-                          <td key={person.id} className="p-4 text-center">
+                          <td key={person.id} className="hidden lg:table-cell p-4 text-center">
                             <input
                               type="checkbox"
                               checked={expense.splitAmong.includes(person.id)}
@@ -382,10 +419,10 @@ function ExpenseCalculator() {
                             />
                           </td>
                         ))}
-                        <td className="p-4">
+                        <td className="p-3 lg:p-4">
                           <button
                             onClick={() => removeExpense(expense.id)}
-                            className="text-red-400 hover:text-white hover:bg-red-500/30 px-4 py-2 rounded-xl transition-all font-medium"
+                            className="text-red-400 hover:text-white hover:bg-red-500/30 px-2 lg:px-4 py-1 lg:py-2 rounded-xl transition-all font-medium text-sm lg:text-base"
                           >
                             삭제
                           </button>
@@ -400,7 +437,7 @@ function ExpenseCalculator() {
             {/* Summary Stats */}
             {expenses.length > 0 && (
               <div className="mt-8">
-                <div className="bg-gradient-to-r from-cyan-500/20 to-purple-500/20 p-6 rounded-2xl border border-white/30 backdrop-blur-sm inline-block">
+                <div className="bg-gradient-to-r from-cyan-500/20 to-purple-500/20 p-3 lg:p-6 rounded-2xl border border-white/30 backdrop-blur-sm inline-block">
                   <p className="text-sm text-white/70 mb-2">총 비용</p>
                   <p className="text-3xl font-black text-white">₩{totalExpense.toLocaleString()}</p>
                 </div>
@@ -411,8 +448,8 @@ function ExpenseCalculator() {
         
         {/* Settlement Results - Always visible when there are settlements */}
         {settlements.length > 0 && (
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/20">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-2 lg:p-8 border border-white/20">
+            <div className="flex items-center justify-between mb-2 lg:mb-6">
               <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                 <span className="text-3xl">✨</span>
                 <span>정산 결과</span>
@@ -441,15 +478,30 @@ function ExpenseCalculator() {
             </div>
             <div className="space-y-3">
               {filteredSettlements.map((settlement, index) => (
-                <div key={index} className="flex items-center justify-between p-6 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-2xl border border-white/20 hover:border-white/40 backdrop-blur-sm transition-all">
-                  <div className="flex items-center gap-4">
-                    <span className="font-bold text-white text-lg">{getPersonName(settlement.from)}</span>
-                    <span className="text-white/60 text-2xl">→</span>
-                    <span className="font-bold text-white text-lg">{getPersonName(settlement.to)}</span>
+                <div key={index} className="p-3 lg:p-6 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-2xl border border-white/20 hover:border-white/40 backdrop-blur-sm transition-all">
+                  {/* Desktop layout */}
+                  <div className="hidden lg:flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <span className="font-bold text-white text-lg">{getPersonName(settlement.from)}</span>
+                      <span className="text-white/60 text-2xl">→</span>
+                      <span className="font-bold text-white text-lg">{getPersonName(settlement.to)}</span>
+                    </div>
+                    <span className="text-2xl font-black text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text">
+                      ₩{settlement.amount.toLocaleString()}
+                    </span>
                   </div>
-                  <span className="text-2xl font-black text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text">
-                    ₩{settlement.amount.toLocaleString()}
-                  </span>
+                  
+                  {/* Mobile layout */}
+                  <div className="lg:hidden">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="font-bold text-white">{getPersonName(settlement.from)}</span>
+                      <span className="text-white/60">→</span>
+                      <span className="font-bold text-white">{getPersonName(settlement.to)}</span>
+                    </div>
+                    <div className="text-xl font-black text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text">
+                      ₩{settlement.amount.toLocaleString()}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -467,6 +519,141 @@ function ExpenseCalculator() {
           </div>
         )}
       </div>
+      
+      {/* Expense Dialog for Mobile */}
+      {showExpenseDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 rounded-3xl p-6 w-full max-w-md border border-white/20">
+            <h3 className="text-2xl font-bold text-white mb-6">비용 추가</h3>
+            
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={newExpenseName}
+                onChange={(e) => setNewExpenseName(e.target.value)}
+                placeholder="항목명 (예: 점심)"
+                className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all backdrop-blur-sm"
+              />
+              
+              <input
+                type="number"
+                value={newExpenseAmount}
+                onChange={(e) => setNewExpenseAmount(e.target.value)}
+                placeholder="금액"
+                className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all backdrop-blur-sm"
+              />
+              
+              <select
+                value={newExpensePaidBy}
+                onChange={(e) => setNewExpensePaidBy(e.target.value)}
+                className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all backdrop-blur-sm"
+              >
+                <option value="" className="bg-gray-800 text-white/50">결제자 선택</option>
+                {people.map(person => (
+                  <option key={person.id} value={person.id} className="bg-gray-800 text-white">{person.name}</option>
+                ))}
+              </select>
+              
+              <div className="pt-4">
+                <h4 className="text-white font-semibold mb-3">비용을 나눌 사람들</h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {people.map(person => (
+                    <label key={person.id} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-all cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={tempSplitAmong.includes(person.id)}
+                        onChange={() => {
+                          setTempSplitAmong(prev => 
+                            prev.includes(person.id) 
+                              ? prev.filter(id => id !== person.id)
+                              : [...prev, person.id]
+                          )
+                        }}
+                        className="w-5 h-5 text-cyan-400 rounded focus:ring-cyan-400 cursor-pointer accent-cyan-400"
+                      />
+                      <span className="text-white">{person.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowExpenseDialog(false)
+                  setNewExpenseName('')
+                  setNewExpenseAmount('')
+                  setNewExpensePaidBy('')
+                  setTempSplitAmong([])
+                }}
+                className="flex-1 px-6 py-3 bg-white/10 border border-white/20 text-white rounded-2xl hover:bg-white/20 transition-all font-semibold"
+              >
+                취소
+              </button>
+              <button
+                onClick={addExpense}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-2xl hover:shadow-2xl hover:shadow-purple-500/25 transform hover:scale-105 transition-all duration-200 font-bold"
+              >
+                추가
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Edit Split Dialog for Mobile */}
+      {editingExpenseId && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 rounded-3xl p-6 w-full max-w-md border border-white/20">
+            <h3 className="text-2xl font-bold text-white mb-6">비용 분할 수정</h3>
+            
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {people.map(person => (
+                <label key={person.id} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-all cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={tempSplitAmong.includes(person.id)}
+                    onChange={() => {
+                      setTempSplitAmong(prev => 
+                        prev.includes(person.id) 
+                          ? prev.filter(id => id !== person.id)
+                          : [...prev, person.id]
+                      )
+                    }}
+                    className="w-5 h-5 text-cyan-400 rounded focus:ring-cyan-400 cursor-pointer accent-cyan-400"
+                  />
+                  <span className="text-white">{person.name}</span>
+                </label>
+              ))}
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setEditingExpenseId(null)
+                  setTempSplitAmong([])
+                }}
+                className="flex-1 px-6 py-3 bg-white/10 border border-white/20 text-white rounded-2xl hover:bg-white/20 transition-all font-semibold"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  if (editingExpenseId && tempSplitAmong.length > 0) {
+                    updateExpense(editingExpenseId, { splitAmong: tempSplitAmong })
+                    setEditingExpenseId(null)
+                    setTempSplitAmong([])
+                  }
+                }}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-2xl hover:shadow-2xl hover:shadow-purple-500/25 transform hover:scale-105 transition-all duration-200 font-bold"
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
